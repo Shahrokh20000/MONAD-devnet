@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TokenLocker DApp</title>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+</head>
+<body>
+    <h1>TokenLocker DApp</h1>
+    <button id="connectButton">Connect Wallet</button>
+    <div id="walletAddress"></div>
+    <div>
+        <h2>Deposit</h2>
+        <input type="number" id="depositAmount" placeholder="Amount in MON">
+        <button id="depositButton">Deposit</button>
+    </div>
+    <div>
+        <h2>Withdraw</h2>
+        <input type="number" id="withdrawAmount" placeholder="Amount in MON">
+        <button id="withdrawButton">Withdraw</button>
+    </div>
+
+    <script>
+        const contractAddress = "0x9959312AD0f30315b0946FC05b383118aC81aC56";
+        const abi = [
+            {
+                "inputs": [],
+                "name": "deposit",
+                "outputs": [],
+                "stateMutability": "payable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "withdraw",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            }
+        ];
+
+        let provider;
+        let signer;
+        let contract;
+
+        document.getElementById('connectButton').onclick = async () => {
+            await connectWallet();
+        };
+
+        document.getElementById('depositButton').onclick = async () => {
+            const amount = document.getElementById('depositAmount').value;
+            await deposit(amount);
+        };
+
+        document.getElementById('withdrawButton').onclick = async () => {
+            const amount = document.getElementById('withdrawAmount').value;
+            await withdraw(amount);
+        };
+
+        async function connectWallet() {
+            if (window.ethereum) {
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                signer = provider.getSigner();
+                document.getElementById('walletAddress').innerText = `Connected: ${await signer.getAddress()}`;
+                contract = new ethers.Contract(contractAddress, abi, signer);
+            } else {
+                alert("Please install MetaMask!");
+            }
+        }
+
+        async function deposit(amount) {
+            const tx = await contract.deposit({ value: ethers.utils.parseEther(amount) });
+            await tx.wait();
+            alert("Deposit successful!");
+        }
+
+        async function withdraw(amount) {
+            const tx = await contract.withdraw(ethers.utils.parseEther(amount));
+            await tx.wait();
+            alert("Withdraw successful!");
+        }
+    </script>
+</body>
+</html>
