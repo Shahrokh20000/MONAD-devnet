@@ -3,27 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TokenLocker DApp</title>
-    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+    <title>Token Locker DApp</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
 </head>
 <body>
-    <h1>TokenLocker DApp</h1>
-    <button id="connectButton">Connect Wallet</button>
-    <div id="walletAddress"></div>
+    <h1>Token Locker DApp</h1>
+    <button id="connectWallet">Connect Wallet</button>
     <div>
-        <h2>Deposit</h2>
-        <input type="number" id="depositAmount" placeholder="Amount in MON">
+        <h2>Deposit MON Tokens</h2>
+        <input type="number" id="depositAmount" placeholder="Amount to deposit">
         <button id="depositButton">Deposit</button>
     </div>
     <div>
-        <h2>Withdraw</h2>
-        <input type="number" id="withdrawAmount" placeholder="Amount in MON">
+        <h2>Withdraw MON Tokens</h2>
+        <input type="number" id="withdrawAmount" placeholder="Amount to withdraw">
         <button id="withdrawButton">Withdraw</button>
     </div>
 
     <script>
         const contractAddress = "0x9959312AD0f30315b0946FC05b383118aC81aC56";
-        const abi = [
+        const contractABI = [
             {
                 "inputs": [],
                 "name": "deposit",
@@ -46,47 +45,36 @@
             }
         ];
 
-        let provider;
-        let signer;
+        let web3;
         let contract;
+        let accounts;
 
-        document.getElementById('connectButton').onclick = async () => {
-            await connectWallet();
-        };
-
-        document.getElementById('depositButton').onclick = async () => {
-            const amount = document.getElementById('depositAmount').value;
-            await deposit(amount);
-        };
-
-        document.getElementById('withdrawButton').onclick = async () => {
-            const amount = document.getElementById('withdrawAmount').value;
-            await withdraw(amount);
-        };
-
-        async function connectWallet() {
+        document.getElementById('connectWallet').addEventListener('click', async () => {
             if (window.ethereum) {
-                provider = new ethers.providers.Web3Provider(window.ethereum);
-                await provider.send("eth_requestAccounts", []);
-                signer = provider.getSigner();
-                document.getElementById('walletAddress').innerText = `Connected: ${await signer.getAddress()}`;
-                contract = new ethers.Contract(contractAddress, abi, signer);
+                web3 = new Web3(window.ethereum);
+                await window.ethereum.request({ method: 'eth_requestAccounts' });
+                accounts = await web3.eth.getAccounts();
+                contract = new web3.eth.Contract(contractABI, contractAddress);
+                alert('Wallet connected');
             } else {
-                alert("Please install MetaMask!");
+                alert('Please install MetaMask!');
             }
-        }
+        });
 
-        async function deposit(amount) {
-            const tx = await contract.deposit({ value: ethers.utils.parseEther(amount) });
-            await tx.wait();
-            alert("Deposit successful!");
-        }
+        document.getElementById('depositButton').addEventListener('click', async () => {
+            const amount = document.getElementById('depositAmount').value;
+            await contract.methods.deposit().send({ from: accounts[0], value: web3.utils.toWei(amount, 'ether') });
+            alert('Deposit successful');
+        });
 
-        async function withdraw(amount) {
-            const tx = await contract.withdraw(ethers.utils.parseEther(amount));
-            await tx.wait();
-            alert("Withdraw successful!");
-        }
+        document.getElementById('withdrawButton').addEventListener('click', async () => {
+            const amount = document.getElementById('withdrawAmount').value;
+            await contract.methods.withdraw(web3.utils.toWei(amount, 'ether')).send({ from: accounts[0] });
+            alert('Withdrawal successful');
+        });
+
+        // Set the network to Monad Devnet
+        web3.setProvider(new Web3.providers.HttpProvider('https://devnet1.monad.xyz/rpc/8XQAiNSsPCrIdVttyeFLC6StgvRNTdf'));
     </script>
 </body>
 </html>
